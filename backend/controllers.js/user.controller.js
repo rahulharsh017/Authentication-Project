@@ -1,5 +1,7 @@
 import UserModel from "../models/user.model.js";
 import bcrypt from "bcrypt";
+import sendEmailVerificationOTP from "../utils/sendEmailVerificationOTP.js";
+import EmailVerificationModel from "../models/emailVerification.js";
 class UserController{
 
     //User Registration
@@ -26,6 +28,8 @@ class UserController{
                  password:hashedPassword
              }).save();
 
+             sendEmailVerificationOTP(req,newUser);
+
              return res.status(201).json(
                 {status:"success",
                     message:"User Registered Successfully",
@@ -34,6 +38,52 @@ class UserController{
         } catch (error) {
             console.log(error);
             res.status(500).json({status:"failed",message:"Unable to Resgister, please try again later"});
+            
+        }
+    }
+    //User Email Verification
+    static verifyEmail = async (req,res) =>{
+        try {
+            const {email,otp} = req.body;
+
+            if(!email || !otp){
+                return res.status(400).json({status:"failed",message:"All fields are required"});
+            }
+
+            const existingUser = await UserModel.findOne({email:email});
+            if(!existingUser){
+                return res.status(400).json({status:"failed",message:"Email does not exist"});
+            }
+
+            if(existingUser.is_verified){
+                return res.status(400).json({status:"failed",message:"Email already verified"});
+            }
+
+            const emailVerification = await EmailVerificationModel.findOne({userId:existingUser._id,otp:otp});
+            if(!emailVerification){
+                if(!existingUser.is_verified){
+                    await sendEmailVerificationOTP(req,existingUser);
+                    return res.status(400).json({status:"failed",message:"Invalid OTP, new OTP sent"});
+                }
+                return res.status(400).json({status:"failed",message:"Invalid OTP"});
+            }
+            
+            const currentTime = new Date();
+            const expirationTime = new Date(emailVerification.createdAt.getTime() + 15*60000);
+            if(currentTime > expirationTime){
+                await sendEmailVerificationOTP(req,existingUser);
+                return res.status(400).json({status:"failed",message:"OTP expired, new OTP sent"});
+            }
+
+            existingUser.is_verified = true;
+            await existingUser.save();
+
+            await EmailVerificationModel.deleteOne({userId:existingUser._id,otp:otp});
+
+            return res.status(200).json({status:"success",message:"Email verified successfully"}); 
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({status:"failed",message:"Unable to verify email, please try again later"});
             
         }
     }
