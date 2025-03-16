@@ -4,6 +4,7 @@ import sendEmailVerificationOTP from "../utils/sendEmailVerificationOTP.js";
 import EmailVerificationModel from "../models/emailVerification.js";
 import generateTokens from "../utils/generateTokens.js";
 import setTokenCookies from "../utils/setTokenCookies.js";
+import refreshAccessToken from "../utils/refreshAcessToken.js";
 class UserController{
 
     //User Registration
@@ -136,6 +137,33 @@ class UserController{
             console.log(error);
             res.status(500).json({status:"failed",message:"Unable to login, please try again later"});
         }
+    }
+
+    // GET New Access Token or Refresh Token
+    static getNewAccessToken = async (req,res) =>{
+        try {
+            
+            const {newAccessToken,newRefreshToken,newAccessTokenExp,newRefreshTokenExp} = await refreshAccessToken(req,res);
+            setTokenCookies(res,newAccessToken,newRefreshToken,newAccessTokenExp,newRefreshTokenExp)
+
+            res.status(200).send({
+                status:"success",
+                message:"New token generateed",
+                access_token:newAccessToken,
+                refresh_token:newRefreshToken,
+                access_token_exp:newAccessTokenExp,
+            });
+            
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({status:"failed",message:"Unable to get new access token, please try again later"});
+            
+        }
+    }
+
+    //Profile OR Logged in User
+    static userProfile = async (req,res) =>{
+        res.send({"user":req.user});
     }
 }
 

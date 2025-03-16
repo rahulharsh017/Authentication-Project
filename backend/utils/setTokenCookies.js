@@ -5,13 +5,13 @@ const setTokenCookies = (res,accessToken,refreshToken,newAccessTokenExp,newRefre
     res.cookie('accessToken',accessToken,{
         httpOnly:true,
         secure:true,
-        maxAge:accessTokenMaxAge,
+        maxAge:accessTokenMaxAge
     })
 
     res.cookie('refreshToken',refreshToken,{
         httpOnly:true,
         secure:true,
-        maxAge:refreshTokenMaxAge,
+        maxAge:refreshTokenMaxAge
     })
 }
 
