@@ -1,6 +1,8 @@
 import express from 'express';
 import UserController from '../controllers.js/user.controller.js';
 import passport from 'passport';
+import setAuthHeader from '../middleware/setAuthHeader.js';
+import accessTokenAutoRefresh from '../middleware/accessTokenAutoRefresh.js';
 
 const router = express.Router();
 
@@ -10,7 +12,7 @@ router.post('/login',UserController.userLogin);
 router.post('/refresh-token',UserController.getNewAccessToken);
 
 //Protected Route
-router.get('/me',passport.authenticate('jwt',{
+router.get('/me',accessTokenAutoRefresh,passport.authenticate('jwt',{
     session:false
 }),UserController.userProfile);
 
